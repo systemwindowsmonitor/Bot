@@ -58,20 +58,7 @@ namespace Diet_Center_Bot
         private static async void eventMessage(object sender, MessageEventArgs e)
         {
 
-            //        var buttonItem = new[] { "one", "two", "three", "Four" };
-
-
-            //        string[] allFileNames = Directory.EnumerateFiles(PATH)
-            //.Select(System.IO.Path.GetFileName)
-            //.ToArray();
-
-            //        int[] lines = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
-            //        int counter = 4;
-            //        var b = allFileNames.GroupBy(_ => counter++ / 4).Select(v => v.ToArray());
-
-            //        // Console.WriteLine(String.Join("\n", b.Select(v => String.Join(" ", v))));
-            //        Console.WriteLine(b.Count()) ;
-
+           
             if (e.Message.Text.Contains("/start"))
             {
                 await client.SendTextMessageAsync(e.Message.Chat.Id, "Это внутренний бот компании Диет центр\n Если вы наш раб нажмите /login для входа\n" +
@@ -79,28 +66,35 @@ namespace Diet_Center_Bot
             }
             if (e.Message.Text.Contains("login_"))
             {
-                string login = e.Message.Text.Substring(e.Message.Text.IndexOf('_') + 1);
-
-                if (db.GetLogins(login).GetAwaiter().GetResult() > 0)
+                if (await db.getUserLastActAsync(e.Message.Chat.Username) == "sign_in")
                 {
-                    e.Message.Text = "/files";
+                    string l = e.Message.Text.Substring(e.Message.Text.IndexOf('_') + 1);
+                    await db.AddUserLogin(l, e.Message.Chat.Username);
+                    await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.Username}, register with login! press /files");
                 }
                 else
                 {
-                    await db.AddUserLogin(login);
-                    await client.SendTextMessageAsync(e.Message.Chat.Id, login + ", register! press /files");
+                    await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.Username}, autorized! press /files");
                 }
-
+                string s = await db.getUserLastActAsync(e.Message.Chat.Username.ToString());
             }
             if (e.Message.Text.Contains("/login"))
             {
+                if(await db.getUserLastActAsync(e.Message.Chat.Username) == "-1")
+                    await db.AddUser(e.Message.Chat.Username.ToString());
                 await client.SendTextMessageAsync(e.Message.Chat.Id, "Enter telegram login (can start from login_)");
-
             }
             if (e.Message.Text.Contains("/files"))
             {
-                var keyboardMarkup = new InlineKeyboardMarkup(GetInlineKeyboard());
-                await client.SendTextMessageAsync(e.Message.Chat.Id, e.Message.Text, replyMarkup: keyboardMarkup);
+                if (await db.getUserLastActAsync(e.Message.Chat.Username) == "register")
+                {
+                    var keyboardMarkup = new InlineKeyboardMarkup(GetInlineKeyboard());
+                    await client.SendTextMessageAsync(e.Message.Chat.Id, e.Message.Text, replyMarkup: keyboardMarkup);
+                }
+                else
+                {
+                    await client.SendTextMessageAsync(e.Message.Chat.Id, "ты не авторизирован");
+                }
             }
 
 

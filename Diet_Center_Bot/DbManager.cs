@@ -45,10 +45,7 @@ namespace Diet_Center_Bot
         {
             return GetLogins(login).GetAwaiter().GetResult() > 0 ? true : false;
         }
-        public bool CheckPassword(string crypt_password)
-        {
-            return GetPasswords(crypt_password).GetAwaiter().GetResult() > 0 ? true : false; ;
-        }
+
         #endregion
 
         #region методы выборки с таблиц
@@ -70,7 +67,26 @@ namespace Diet_Center_Bot
             return data;
         }
 
-
+        public async Task<string> getUserLastActAsync(string login_telegram)
+        {
+            string act = "-1";
+            using (SQLiteConnection conn = new SQLiteConnection(string.Format($"Data Source={dataBaseName};")))
+            {
+                await conn.OpenAsync();
+                //SQLiteCommand command = new SQLiteCommand("SELECT last_act  FROM AuthorizationData WHERE telegram_login = @login_telegram;", conn);
+                //command.Parameters.Add(new SQLiteParameter("@login_telegram", login_telegram));
+                SQLiteCommand command = new SQLiteCommand("SELECT last_act FROM AuthorizationData where telegram_login = @login;", conn);
+                command.Parameters.Add(new SQLiteParameter("@login", login_telegram));
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    foreach (DbDataRecord record in reader)
+                    {
+                        act = record["last_act"].ToString();
+                    }
+                }
+            }
+            return act;
+        }
 
         public async Task<List<User>> getUsers()
         {
@@ -138,52 +154,11 @@ namespace Diet_Center_Bot
             }
             return 0;
         }
-        public async Task<List<string>> GetPasswords()
-        {
-            List<string> data = new List<string>();
-            using (SQLiteConnection conn = new SQLiteConnection(string.Format($"Data Source={dataBaseName};")))
-            {
-                await conn.OpenAsync();
-                SQLiteCommand command = new SQLiteCommand("SELECT password FROM AuthorizationData;", conn);
-                using (var reader = await command.ExecuteReaderAsync())
-                {
-                    foreach (DbDataRecord record in reader)
-                    {
-                        data.Add(record["password"].ToString());
-                    }
-                }
-            }
-            return data;
-        }
-        private async Task<int> GetPasswords(string key)
-        {
-            try
-            {
-                using (SQLiteConnection conn = new SQLiteConnection(string.Format($"Data Source={dataBaseName};")))
-                {
-                    await conn.OpenAsync();
-                    SQLiteCommand command = new SQLiteCommand("SELECT id FROM AuthorizationData where password = @password;", conn);
-                    command.Parameters.Add(new SQLiteParameter("@password", key));
-                    SQLiteDataReader reader = command.ExecuteReader();
-                    if (reader.HasRows)
-                        return reader.FieldCount;
-                }
-            }
-            catch (System.Exception ex)
-            {
-
-                throw ex;
-            }
-
-            return 0;
-        }
-
-        
         #endregion
 
         #region добавление пользователей
 
-        public async Task<bool> AddUserLogin(string login)
+        public async Task<bool> AddUser(string telegram_login)
         {
             SQLiteConnection conn;
             try
@@ -191,8 +166,8 @@ namespace Diet_Center_Bot
                 using (conn = new SQLiteConnection(string.Format($"Data Source={dataBaseName};")))
                 {
                     await conn.OpenAsync();
-                    SQLiteCommand command = new SQLiteCommand("INSERT INTO AuthorizationData (login)  VALUES (@login);", conn);
-                    command.Parameters.Add(new SQLiteParameter("@login", login));
+                    SQLiteCommand command = new SQLiteCommand("INSERT INTO AuthorizationData (telegram_login, last_act)  VALUES (@telegram_login, 'sign_in');", conn);
+                    command.Parameters.Add(new SQLiteParameter("@telegram_login", telegram_login));
                     command.CreateParameter();
 
                     await command.ExecuteNonQueryAsync();
@@ -206,69 +181,40 @@ namespace Diet_Center_Bot
             }
 
             return true;
-        }
 
-        public async Task<bool> AddUserPassword(string login, string pass)
+
+        }
+        public async Task<bool> AddUserLogin(string login, string telegram_login)
         {
+            SQLiteConnection conn;
+            bool isOk = false;
             try
             {
-                using (SQLiteConnection conn = new SQLiteConnection(string.Format($"Data Source={dataBaseName};")))
+                using (conn = new SQLiteConnection(string.Format($"Data Source={dataBaseName};")))
                 {
                     await conn.OpenAsync();
-                    SQLiteCommand command = new SQLiteCommand("UPDATE AuthorizationData SET password = @password WHERE login = @login ;", conn);
+                    SQLiteCommand command = new SQLiteCommand("UPDATE AuthorizationData SET login = 'rus', last_act = 'register' WHERE telegram_login = @telegram_login", conn);
                     command.Parameters.Add(new SQLiteParameter("@login", login));
-                    command.Parameters.Add(new SQLiteParameter("@password", pass));
+                    //command.Parameters.Add(new SQLiteParameter("@telegram_login", telegram_login));
                     command.CreateParameter();
 
                     command.ExecuteNonQueryAsync().GetAwaiter().GetResult();
-                }
-                return true;
-            }
-            catch (System.Exception ex)
-            {
-                return false;
-            }
-           
-        }
 
-        /// <summary>
-        /// ДОБАВЛЯЕТ НОВЫЕ ДАННЫЕ АВТОРИЗАЦИИ И ВОЗРАЩАЕТ ID ЗАПИСИ
-        /// </summary>
-        /// <param name="login"></param>
-        /// <param name="pass"></param>
-        /// <param name="role"></param>
-        /// <returns></returns>
-        public async Task<int> AddAutorizationDataAsync(string login, string pass, string role)
-        {
-            try
-            {
-                using (SQLiteConnection conn = new SQLiteConnection(string.Format($"Data Source={dataBaseName};")))
-                {
-                    await conn.OpenAsync();
-                    SQLiteCommand command = new SQLiteCommand("INSERT INTO AuthorizationData (login,password,role)VALUES(@login,@password,@role);", conn);
-                    command.Parameters.Add(new SQLiteParameter("@login", login));
-                    command.Parameters.Add(new SQLiteParameter("@password", pass));
-                    command.Parameters.Add(new SQLiteParameter("@role", role));
-                    command.CreateParameter();
-                    if (command.ExecuteNonQueryAsync().GetAwaiter().GetResult() > 0)
-                    {
-                        command = new SQLiteCommand("SELECT MAX(Id) From AuthorizationData", conn);
-
-                        var i = command.ExecuteReaderAsync();
-                        if (await i.GetAwaiter().GetResult().ReadAsync())
-                        {
-                            return int.Parse(i.GetAwaiter().GetResult().GetValue(0).ToString());
-                        }
-
-                    }
+                    //await conn.OpenAsync();
+                    //SQLiteCommand command = new SQLiteCommand("UPDATE AuthorizationData SET login = @login WHERE telegram_login = @telegram_login", conn);
+                    //command.Parameters.Add(new SQLiteParameter("@login", login));
+                    //command.Parameters.Add(new SQLiteParameter("@telegram_login", telegram_login));
+                    //command.CreateParameter();
+                    //int a = await command.ExecuteNonQueryAsync();
+                   
+                        isOk = !isOk;
                 }
             }
             catch (System.Exception ex)
-            {
-                return -1;
-            }
-            return -1;
+            {}
+            return isOk;
         }
+
         #endregion
 
         public void Dispose()
