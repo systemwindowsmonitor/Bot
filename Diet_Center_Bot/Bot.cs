@@ -80,20 +80,38 @@ namespace Diet_Center_Bot
                 }
                 string s = await db.getUserLastActAsync(e.Message.Chat.Username.ToString());
             }
+
+            if (e.Message.Text.Contains("Login_"))
+            {
+                if (await db.getUserLastActAsync(e.Message.Chat.Username) == "sign_in")
+                {
+                    string l = e.Message.Text.Substring(e.Message.Text.IndexOf('_') + 1);
+                    await db.AddUserLogin(l, e.Message.Chat.Username);
+                    await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.FirstName}, Вы зарегистрировались под именем пользователя telegram {e.Message.Chat.Username}! Пожалуйста нажмите /files" +
+                        $"\n\n{e.Message.Chat.FirstName}, You are registered with {e.Message.Chat.Username}! Please click /files");
+                }
+                else
+                {
+                    await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.FirstName}, Вы уже авторизованы! Пожалуйста нажмите /files " +
+                                                                            $"\n\n{e.Message.Chat.FirstName}, You are registered under the username telegram {e.Message.Chat.Username}! Please click /files");
+                }
+                string s = await db.getUserLastActAsync(e.Message.Chat.Username.ToString());
+            }
+
             if (e.Message.Text.Contains("/login"))
             {
                 try
                 {
                     if (await db.getUserLastActAsync(e.Message.Chat.Username) == "-1")
                         await db.AddUser(e.Message.Chat.Username.ToString());
-                    await client.SendTextMessageAsync(e.Message.Chat.Id, e.Message.Chat.FirstName + ", введите имя пользователя telegram (нужно начать с ' login_ ')" +
-                        "\n\n" + e.Message.Chat.FirstName + ", enter telegram username (can start from  ' login_ ')");
+                    await client.SendTextMessageAsync(e.Message.Chat.Id, e.Message.Chat.FirstName + ", введите имя пользователя telegram (нужно начать с login_ или Login_ )" +
+                        "\n\n" + e.Message.Chat.FirstName + ", enter telegram username (can start from  login_ or Login_ )");
                 }
                 catch (System.Exception ex)
                 {
-                    await client.SendTextMessageAsync(e.Message.Chat.Id, e.Message.Chat.FirstName + ", у Вас не указано имя пользователя telegram. Пожалуйста укажите имя пользователя для " +
-                                                                                                                                                    "дальнейшей регистрации и нажмите /login" +
-                                                        "\n\n" + e.Message.Chat.FirstName + ", You do not have a telegram username. Please enter a username for further registration and click /login");
+                    await client.SendTextMessageAsync(e.Message.Chat.Id, e.Message.Chat.FirstName + ", у Вас не указано имя пользователя telegram. Для регистрации пожалуйста укажите имя пользователя в " +
+                                                                                                                                                    "вашем профиле телеграмм и нажмите /login" +
+                                                        "\n\n" + e.Message.Chat.FirstName + ", You do not have a telegram username. To register, please enter the username in your telegram profile and click /login");
                 }
                 
             }
@@ -107,11 +125,9 @@ namespace Diet_Center_Bot
                 else
                 {
                     await client.SendTextMessageAsync(e.Message.Chat.Id, e.Message.Chat.FirstName + ", для использования команды /files необходимо зарегистрироваться. Для регистрации нажмите на команду /login" +
-                                                        "\n\n" + e.Message.Chat.FirstName + ", you must register to use the / files command. To register, click on the command /login");
+                                                        "\n\n" + e.Message.Chat.FirstName + ", you must register to use the /files command. To register, click on the command /login");
                 }
             }
-
-
 
             //await client.SendTextMessageAsync(e.Message.Chat.Id, e.Message.Text);
         }
