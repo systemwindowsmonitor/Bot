@@ -75,7 +75,7 @@ namespace Diet_Center_Bot
                 }
                 else
                 {
-                    await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.FirstName}, Вы уже авторизованы! Пожалуйста нажмите /files " +
+                    await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.FirstName}, Вы зарегистрировались под именем пользователя telegram {e.Message.Chat.Username}! Пожалуйста нажмите /files " +
                                                                             $"\n\n{e.Message.Chat.FirstName}, You are registered under the username telegram {e.Message.Chat.Username}! Please click /files");
                 }
                 string s = await db.getUserLastActAsync(e.Message.Chat.Username.ToString());
