@@ -36,6 +36,12 @@ namespace Diet_Center_Bot
 
         private static void eventCallBack(object sender, CallbackQueryEventArgs e)
         {
+            if (e.CallbackQuery.Data.Contains("question_"))
+            {
+                string s = db.Questionary[e.CallbackQuery.Data.Substring("question_".Length)];
+                client.SendTextMessageAsync(e.CallbackQuery.Message.Chat.Id, s);
+                return;
+            }
             try
             {
                 var a = new InputOnlineFile(new MemoryStream(File.ReadAllBytes(PATH + e.CallbackQuery.Data)), e.CallbackQuery.Data);
@@ -58,7 +64,7 @@ namespace Diet_Center_Bot
         private static async void eventMessage(object sender, MessageEventArgs e)
         {
 
-           
+
             if (e.Message.Text.Contains("/start"))
             {
                 await client.SendTextMessageAsync(e.Message.Chat.Id, "Здравствуйте " + e.Message.Chat.FirstName + ", Вас приветствует DietCenter.\nДля регистрации необходимо нажать /login" +
@@ -75,7 +81,7 @@ namespace Diet_Center_Bot
                 }
                 else
                 {
-                    await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.FirstName}, Вы уже авторизованы! Пожалуйста нажмите /files " +
+                    await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.FirstName}, Вы уже авторизованы! Пожалуйста нажмите /files или /questions для просмотра вопросов-ответов" +
                                                                             $"\n\n{e.Message.Chat.FirstName}, You are registered under the username telegram {e.Message.Chat.Username}! Please click /files");
                 }
                 string s = await db.getUserLastActAsync(e.Message.Chat.Username.ToString());
@@ -92,7 +98,7 @@ namespace Diet_Center_Bot
                 }
                 else
                 {
-                    await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.FirstName}, Вы уже авторизованы! Пожалуйста нажмите /files " +
+                    await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.FirstName}, Вы уже авторизованы! Пожалуйста нажмите /files или /questions для просмотра вопросов-ответов" +
                                                                             $"\n\n{e.Message.Chat.FirstName}, You are registered under the username telegram {e.Message.Chat.Username}! Please click /files");
                 }
                 string s = await db.getUserLastActAsync(e.Message.Chat.Username.ToString());
@@ -113,14 +119,21 @@ namespace Diet_Center_Bot
                                                                                                                                                     "вашем профиле телеграмм и нажмите /login" +
                                                         "\n\n" + e.Message.Chat.FirstName + ", You do not have a telegram username. To register, please enter the username in your telegram profile and click /login");
                 }
-                
+
             }
             if (e.Message.Text.Contains("/files"))
             {
                 if (await db.getUserLastActAsync(e.Message.Chat.Username) == "register")
                 {
-                    var keyboardMarkup = new InlineKeyboardMarkup(GetInlineKeyboard());
-                    await client.SendTextMessageAsync(e.Message.Chat.Id, e.Message.Text, replyMarkup: keyboardMarkup);
+                    if (Directory.Exists(PATH) && (new DirectoryInfo(PATH).GetFiles().Length > 0))
+                    {
+                        var keyboardMarkup = new InlineKeyboardMarkup(GetInlineKeyboardFiles());
+                        await client.SendTextMessageAsync(e.Message.Chat.Id, e.Message.Text, replyMarkup: keyboardMarkup);
+                    }
+                    else
+                    {
+                        await client.SendTextMessageAsync(e.Message.Chat.Id, "пока файлов нет...");
+                    }
                 }
                 else
                 {
@@ -128,13 +141,25 @@ namespace Diet_Center_Bot
                                                         "\n\n" + e.Message.Chat.FirstName + ", you must register to use the /files command. To register, click on the command /login");
                 }
             }
-
+            if (e.Message.Text.Contains("/questions"))
+            {
+                if (await db.getUserLastActAsync(e.Message.Chat.Username) == "register")
+                {
+                    var keyboardMarkup = new InlineKeyboardMarkup(GetInlineKeyboardQuestionary());
+                    await client.SendTextMessageAsync(e.Message.Chat.Id, e.Message.Chat.FirstName, replyMarkup: keyboardMarkup);
+                }
+                else
+                {
+                    await client.SendTextMessageAsync(e.Message.Chat.Id, e.Message.Chat.FirstName + ", для использования команды /questions необходимо зарегистрироваться. Для регистрации нажмите на команду /login" +
+                                                        "\n\n" + e.Message.Chat.FirstName + ", you must register to use the /files command. To register, click on the command /login");
+                }
+            }
             //await client.SendTextMessageAsync(e.Message.Chat.Id, e.Message.Text);
         }
 
         private static void RenameAllFiles()
         {
-
+            
             var di = new DirectoryInfo(PATH).GetFiles();
             string tempExtension, newpath, name;
             int i = 0;
@@ -152,7 +177,23 @@ namespace Diet_Center_Bot
                 }
             }
         }
-        private static InlineKeyboardButton[][] GetInlineKeyboard()
+        private static InlineKeyboardButton[][] GetInlineKeyboardQuestionary()
+        {
+            var keyboardInline = new InlineKeyboardButton[db.Questionary.Count][];
+            for (int i = 0; i < db.Questionary.Count; i++)
+            {
+                var keyboardButtons = new InlineKeyboardButton[1];
+                keyboardButtons[0] = new InlineKeyboardButton
+                {
+                    Text = db.Questionary.Keys.ElementAt(i),
+                    CallbackData = ("question_" + db.Questionary.Keys.ElementAt(i))
+                };
+                keyboardInline[i] = keyboardButtons;
+            }
+
+            return keyboardInline;
+        }
+        private static InlineKeyboardButton[][] GetInlineKeyboardFiles()
         {
             RenameAllFiles();
 
