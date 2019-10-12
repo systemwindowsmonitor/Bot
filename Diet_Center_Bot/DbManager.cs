@@ -10,6 +10,8 @@ namespace Diet_Center_Bot
     class DbManager : System.IDisposable
     {
         string dataBaseName;
+        public Dictionary<string, string> Questionary { private set; get; }
+
         public DbManager(string dataBaseName)
         {
             if (File.Exists(System.IO.Directory.GetCurrentDirectory() + "\\DB.db"))
@@ -18,6 +20,29 @@ namespace Diet_Center_Bot
                 throw new FileNotFoundException("No such database! Check path to it!");
             if (!CheckDbTablesAsync().GetAwaiter().GetResult())
                 throw new SQLiteException("No needed tables in dataBase! Please, update it!");
+
+            Questionary = getQuestionaryFromDb();
+        }
+
+        private Dictionary<string, string> getQuestionaryFromDb()
+        {
+            var tmp = new Dictionary<string, string>();
+
+
+            using (SQLiteConnection conn = new SQLiteConnection(string.Format($"Data Source={dataBaseName};")))
+            {
+                conn.Open();
+                SQLiteCommand command = new SQLiteCommand("SELECT * FROM Questionary;", conn);
+                using (var reader = command.ExecuteReader())
+                {
+                    foreach (DbDataRecord record in reader)
+                    {
+                        tmp.Add(record.GetValue(1).ToString(), record.GetValue(2).ToString());
+                    }
+                }
+            }
+
+            return tmp;
         }
 
         private async Task<bool> CheckDbTablesAsync()
