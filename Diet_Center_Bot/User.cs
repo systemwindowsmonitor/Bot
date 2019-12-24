@@ -14,6 +14,9 @@
             this.ip = ip;
             this.Region = region;
         }
-
+        /*
+         бла-бла-бла
+         Vova cool bay
+         */
     }
 }
