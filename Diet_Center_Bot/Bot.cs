@@ -25,10 +25,16 @@ namespace Diet_Center_Bot
         {
             if (client == null)
             {
-                client = new TelegramBotClient("652792663:AAFxU3zISJKqaBHGhJ3CvRnNhivIf7VCVng");
+                client = new TelegramBotClient("987477165:AAGJmiDWuSgz-nkiZitBk8qE_PLTjTDUUN8");
                 client.OnMessage += eventMessage;
                 client.OnCallbackQuery += eventCallBack;
                 db = new DbManager(System.IO.Directory.GetCurrentDirectory() + "\\DB.db");
+                ////373162664
+                //foreach (var item in db.getUsersChats())
+                //{
+                //    client.SendTextMessageAsync(item, "ASD");
+                //}
+
             }
 
             return new Bot();
@@ -54,6 +60,17 @@ namespace Diet_Center_Bot
 
         }
 
+        public static void StopBot()
+        {
+            if (client != null)
+                client.StopReceiving();
+            if (db != null)
+                db.Dispose();
+            if (PATH != null)
+                PATH = String.Empty;
+            GC.Collect();
+        }
+
         public void startReceiving()
         {
             do
@@ -69,40 +86,50 @@ namespace Diet_Center_Bot
             {
                 await client.SendTextMessageAsync(e.Message.Chat.Id, "Здравствуйте " + e.Message.Chat.FirstName + ", Вас приветствует DietCenter.\nДля регистрации необходимо нажать /login" +
                                                                      "\n\nHello " + e.Message.Chat.FirstName + ", DietCenter welcomes you.\nTo register, click /login");
+                Console.WriteLine(e.Message.Chat.Id);
             }
-            if (e.Message.Text.Contains("login_"))
+
+            if (e.Message.Text.Contains("/help"))
+            {
+                await client.SendTextMessageAsync(e.Message.Chat.Id, "Список команд бота:\n/files - файлы\n/questions - вопросы и ответы" +
+                    "\n\nList of bot commands: \n/files - files \n/questions - questions and answers");
+            }
+
+            if (e.Message.Text.ToString().ToLower().Contains("login_"))
             {
                 if (await db.getUserLastActAsync(e.Message.Chat.Username) == "sign_in")
                 {
                     string l = e.Message.Text.Substring(e.Message.Text.IndexOf('_') + 1);
-                    await db.AddUserLogin(l, e.Message.Chat.Username);
-                    await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.FirstName}, Вы зарегистрировались под именем пользователя telegram {e.Message.Chat.Username}! Пожалуйста нажмите /files" +
-                        $"\n\n{e.Message.Chat.FirstName}, You are registered with {e.Message.Chat.Username}! Please click /files");
+                    await db.AddUserLogin(l, e.Message.Chat.Username, e.Message.Chat.Id);
+                    await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.FirstName}, Вы зарегистрировались под именем пользователя telegram {e.Message.Chat.Username}! Пожалуйста нажмите /help " +
+                        $"для просмотра команд бота" +
+                        $"\n\n{e.Message.Chat.FirstName}, You are registered under the telegram username {e.Message.Chat.Username}! Please click /help to view bot commands");
                 }
                 else
                 {
-                    await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.FirstName}, Вы уже авторизованы! Пожалуйста нажмите /files или /questions для просмотра вопросов-ответов" +
-                                                                            $"\n\n{e.Message.Chat.FirstName}, You are registered under the username telegram {e.Message.Chat.Username}! Please click /files");
+                    await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.FirstName}, Вы уже авторизованы! Пожалуйста нажмите /help для просмотра команд бота" +
+                                                                            $"\n\n{e.Message.Chat.FirstName}, You are already logged in! Please click /help to view bot commands");
                 }
                 string s = await db.getUserLastActAsync(e.Message.Chat.Username.ToString());
             }
 
-            if (e.Message.Text.Contains("Login_"))
-            {
-                if (await db.getUserLastActAsync(e.Message.Chat.Username) == "sign_in")
-                {
-                    string l = e.Message.Text.Substring(e.Message.Text.IndexOf('_') + 1);
-                    await db.AddUserLogin(l, e.Message.Chat.Username);
-                    await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.FirstName}, Вы зарегистрировались под именем пользователя telegram {e.Message.Chat.Username}! Пожалуйста нажмите /files" +
-                        $"\n\n{e.Message.Chat.FirstName}, You are registered with {e.Message.Chat.Username}! Please click /files");
-                }
-                else
-                {
-                    await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.FirstName}, Вы уже авторизованы! Пожалуйста нажмите /files или /questions для просмотра вопросов-ответов" +
-                                                                            $"\n\n{e.Message.Chat.FirstName}, You are registered under the username telegram {e.Message.Chat.Username}! Please click /files");
-                }
-                string s = await db.getUserLastActAsync(e.Message.Chat.Username.ToString());
-            }
+            //if (e.Message.Text.Contains("Login_"))
+            //{
+            //    if (await db.getUserLastActAsync(e.Message.Chat.Username) == "sign_in")
+            //    {
+            //        string l = e.Message.Text.Substring(e.Message.Text.IndexOf('_') + 1);
+            //        await db.AddUserLogin(l, e.Message.Chat.Username);
+            //        await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.FirstName}, Вы зарегистрировались под именем пользователя telegram {e.Message.Chat.Username}! Пожалуйста нажмите /help " +
+            //            $"для просмотра команд бота" +
+            //            $"\n\n{e.Message.Chat.FirstName}, You are registered under the telegram username {e.Message.Chat.Username}! Please click /help to view bot commands");
+            //    }
+            //    else
+            //    {
+            //        await client.SendTextMessageAsync(e.Message.Chat.Id, $"{e.Message.Chat.FirstName}, Вы уже авторизованы! Пожалуйста нажмите /help для просмотра команд бота" +
+            //                                                                $"\n\n{e.Message.Chat.FirstName}, You are already logged in! Please click /help to view bot commands");
+            //    }
+            //    string s = await db.getUserLastActAsync(e.Message.Chat.Username.ToString());
+            //}
 
             if (e.Message.Text.Contains("/login"))
             {
@@ -132,7 +159,7 @@ namespace Diet_Center_Bot
                     }
                     else
                     {
-                        await client.SendTextMessageAsync(e.Message.Chat.Id, "пока файлов нет...");
+                        await client.SendTextMessageAsync(e.Message.Chat.Id, "Пока файлов нет...");
                     }
                 }
                 else
@@ -146,20 +173,29 @@ namespace Diet_Center_Bot
                 if (await db.getUserLastActAsync(e.Message.Chat.Username) == "register")
                 {
                     var keyboardMarkup = new InlineKeyboardMarkup(GetInlineKeyboardQuestionary());
-                    await client.SendTextMessageAsync(e.Message.Chat.Id, e.Message.Chat.FirstName, replyMarkup: keyboardMarkup);
+                    await client.SendTextMessageAsync(e.Message.Chat.Id, e.Message.Chat.FirstName + ", для Вас представлен ряд вопросов на которые Вы можете получить ответы"
+                        + "\n\n" + e.Message.Chat.FirstName + ", a number of questions are presented for you to which you can get answers", replyMarkup: keyboardMarkup);
                 }
                 else
                 {
                     await client.SendTextMessageAsync(e.Message.Chat.Id, e.Message.Chat.FirstName + ", для использования команды /questions необходимо зарегистрироваться. Для регистрации нажмите на команду /login" +
-                                                        "\n\n" + e.Message.Chat.FirstName + ", you must register to use the /files command. To register, click on the command /login");
+                                                        "\n\n" + e.Message.Chat.FirstName + ", you must register to use the /questions command. To register, click on the command /login");
                 }
             }
             //await client.SendTextMessageAsync(e.Message.Chat.Id, e.Message.Text);
         }
+        public static async void SendMessageToBot(string message)
+        {
+            if (message.Length > 0)
+                foreach (var item in db.getUsersChats())
+                {
+                    await client.SendTextMessageAsync(item, message);
+                }
+        }
 
         private static void RenameAllFiles()
         {
-            
+
             var di = new DirectoryInfo(PATH).GetFiles();
             string tempExtension, newpath, name;
             int i = 0;

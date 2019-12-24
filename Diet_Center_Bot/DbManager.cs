@@ -24,6 +24,28 @@ namespace Diet_Center_Bot
             Questionary = getQuestionaryFromDb();
         }
 
+        public List<long> getUsersChats()
+        {
+            var tmp = new List<long>();
+
+
+            using (SQLiteConnection conn = new SQLiteConnection(string.Format($"Data Source={dataBaseName};")))
+            {
+                conn.Open();
+                SQLiteCommand command = new SQLiteCommand("SELECT * FROM AuthorizationData;", conn);
+                using (var reader = command.ExecuteReader())
+                {
+                    foreach (DbDataRecord record in reader)
+                    {
+                        if (record.IsDBNull(3) == false && record.IsDBNull(4) == false)
+                            if (record.GetString(3).Equals("register"))
+                                tmp.Add(record.GetInt64(4));
+                    }
+                }
+            }
+
+            return tmp;
+        }
         private Dictionary<string, string> getQuestionaryFromDb()
         {
             var tmp = new Dictionary<string, string>();
@@ -107,7 +129,7 @@ namespace Diet_Center_Bot
             { }
             return isOk;
         }
-        public async Task<bool> AddUserLogin(string login, string telegram_login)
+        public async Task<bool> AddUserLogin(string login, string telegram_login, long chat_id)
         {
             SQLiteConnection conn;
             bool isOk = false;
@@ -116,9 +138,10 @@ namespace Diet_Center_Bot
                 using (conn = new SQLiteConnection(string.Format($"Data Source={dataBaseName};")))
                 {
                     await conn.OpenAsync();
-                    SQLiteCommand command = new SQLiteCommand("UPDATE AuthorizationData SET login = @log, last_act = 'register' WHERE telegram_login = @telegram_login", conn);
+                    SQLiteCommand command = new SQLiteCommand("UPDATE AuthorizationData SET login = @log, chat_id = @chat_id, last_act = 'register' WHERE telegram_login = @telegram_login", conn);
                     command.Parameters.Add(new SQLiteParameter("@telegram_login", telegram_login));
                     command.Parameters.Add(new SQLiteParameter("@log", login));
+                    command.Parameters.Add(new SQLiteParameter("@chat_id", chat_id));
                     command.CreateParameter();
                     command.ExecuteNonQueryAsync().GetAwaiter().GetResult();
                     isOk = !isOk;
@@ -135,7 +158,8 @@ namespace Diet_Center_Bot
         {
             try
             {
-
+                Questionary.Clear();
+                dataBaseName = String.Empty;
             }
             catch (System.Exception ex)
             {
